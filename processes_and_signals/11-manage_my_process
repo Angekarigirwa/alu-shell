@@ -1,56 +1,40 @@
-#!/usr/bin/env bash
-# my process
+#!/bin/bash
 
+PID_FILE="/var/run/my_process.pid"
 
+start() {
+    echo "Starting manage_my_process..."
+    ./manage_my_process &  # Start the process in the background
+    echo $! > "$PID_FILE"  # Save the PID to the file
+    echo "Process started with PID $(cat $PID_FILE)"
+}
 
-command="$1"
+stop() {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        echo "Stopping process $PID..."
+        kill "$PID" 2>/dev/null  # Stop the process
+        rm -f "$PID_FILE"        # Remove the PID file
+        echo "Process stopped and PID file deleted."
+    else
+        echo "No PID file found. Process may not be running."
+    fi
+}
 
-
-
-if [ -z "$command" ]; then
-
-	  echo "Usage: manage_my_process {start|stop|restart}"
-
-	    exit
-
-fi
-
-
-
-if [ "$command" == "start" ]; then
-
-
-
-	  bash ./manage_my_process &
-
-	    echo "$!" > /var/run/my_process.pid
-
-	      echo "manage_my_process started"
-
-
-
-      elif [ "$command" == "stop" ]; then
-
-	        [ -e "/var/run/my_process.pid" ] && pkill -f './manage_my_process' && rm /var/run/my_process.pid
-
-		  echo "manage_my_process stopped"
-
-
-
-	  elif [ "$command" == "restart" ]; then
-
-
-
-		    "$0" stop >& /dev/null
-
-		      "$0" start >& /dev/null
-
-		        echo "manage_my_process restarted"
-
-
-
-		else
-
-			  echo "Usage: manage_my_process {start|stop|restart}" 
-
-fi
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        sleep 1
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
